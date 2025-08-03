@@ -46,24 +46,37 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration - Updated for Live Server
+// CORS configuration - Updated for production and development
 app.use(cors({
-  origin: [
-    'http://localhost:3000', 
-    'http://127.0.0.1:5500', 
-    'http://localhost:5500',
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'http://127.0.0.1:8080',
-    'http://localhost:8080',
-    'http://127.0.0.1:5000',
-    'http://localhost:5000',
-    'http://127.0.0.1:5001',
-    'http://localhost:5001',
-    'http://127.0.0.1:5002',
-    'http://localhost:5002',
-    'null' // Allow local file:// origin
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000', 
+      'http://127.0.0.1:5500', 
+      'http://localhost:5500',
+      'http://127.0.0.1:8000',
+      'http://localhost:8000',
+      'http://127.0.0.1:8080',
+      'http://localhost:8080',
+      'http://127.0.0.1:5000',
+      'http://localhost:5000',
+      'http://127.0.0.1:5001',
+      'http://localhost:5001',
+      'http://127.0.0.1:5002',
+      'http://localhost:5002',
+      'https://bacend-6rm4.onrender.com', // Your Render domain
+      'https://*.onrender.com' // Allow all Render subdomains
+    ];
+    
+    // Check if origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -84,6 +97,27 @@ app.use('/api/artisan', artisanRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to Crochet ArtY API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      products: '/api/products',
+      cart: '/api/cart',
+      artisan: '/api/artisan',
+      orders: '/api/orders',
+      reviews: '/api/reviews',
+      wishlist: '/api/wishlist'
+    },
+    documentation: 'All endpoints are prefixed with /api/',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
